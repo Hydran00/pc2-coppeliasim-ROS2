@@ -21,14 +21,14 @@
 #define M_PI 3.14159265358979323846
 #define degreesToRadians(angleDegrees) (angleDegrees * M_PI / 180.0)
 
-class Float32MultiArrayToPointCloud2 : public rclcpp::Node
+class RawToPointCloud2 : public rclcpp::Node
 {
 public:
-  Float32MultiArrayToPointCloud2()
+  RawToPointCloud2()
     : Node("float32multiarray_to_pointcloud2")
   {
     // Get parameters
-    this->declare_parameter<std::string>("input_topic", "Float32MultiArray_in");
+    this->declare_parameter<std::string>("input_topic", "cloud_raw");
     this->declare_parameter<std::string>("output_topic", "cloud_out");
     this->declare_parameter<std::string>("frame_id", "map");
     this->declare_parameter<float>("near_clip", 0.02);
@@ -51,7 +51,7 @@ public:
 
     // Set up subscriber
     sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-      input_topic_, 1000, std::bind(&Float32MultiArrayToPointCloud2::chatterCallback, this, std::placeholders::_1));
+      input_topic_, 1000, std::bind(&RawToPointCloud2::chatterCallback, this, std::placeholders::_1));
     
     scale_ = (far_clip_ - near_clip_) / 1.0;
     // unsigned int datalen = height_ * width_;
@@ -109,7 +109,7 @@ private:
 int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<Float32MultiArrayToPointCloud2>();
+  auto node = std::make_shared<RawToPointCloud2>();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;

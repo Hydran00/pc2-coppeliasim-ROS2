@@ -22,19 +22,19 @@ add_definitions(${PCL_DEFINITIONS})
 
 
 # Create an executable
-add_executable(pc2_coppeliasim src/pc2_coppeliasim.cpp)
+add_executable(raw_to_pc2 src/raw_to_pc2.cpp)
 # Link the executable with necessary libraries
-ament_target_dependencies(pc2_coppeliasim
+ament_target_dependencies(raw_to_pc2
 rclcpp
 std_msgs
 pcl_conversions
 sensor_msgs
 )
-target_link_libraries(pc2_coppeliasim ${PCL_LIBRARIES})
+target_link_libraries(raw_to_pc2 ${PCL_LIBRARIES})
 
 # Install the executable
 install(TARGETS
-  pc2_coppeliasim
+  raw_to_pc2
   DESTINATION lib/${PROJECT_NAME}
 )
 
