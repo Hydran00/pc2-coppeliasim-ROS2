@@ -46,12 +46,17 @@ public:
     this->get_parameter("height", height_);
     this->get_parameter("width", width_);
 
+    
+    std::cout << this->get_name()<<": Input topic: " << input_topic_ << std::endl;
+    std::cout << this->get_name()<<": Output topic: " << output_topic_ << std::endl;
+    std::cout << this->get_name()<<": Frame ID: " << frame_id_ << std::endl;
+    std::cout << this->get_name()<<": Resolution: " << width_ << "x" << height_ << std::endl;
     // Set up publisher
     pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(output_topic_, 1);
 
     // Set up subscriber
     sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-      input_topic_, 1000, std::bind(&RawToPointCloud2::chatterCallback, this, std::placeholders::_1));
+      input_topic_, 1, std::bind(&RawToPointCloud2::chatterCallback, this, std::placeholders::_1));
     
     scale_ = (far_clip_ - near_clip_) / 1.0;
     // unsigned int datalen = height_ * width_;
@@ -90,6 +95,14 @@ private:
       }
     }
   
+    // add Gaussian noise
+    for (size_t i = 0; i < cloud->points.size(); i++)
+    {
+      cloud->points[i].x += 0.01 * ((float)rand() / RAND_MAX - 0.5);
+      cloud->points[i].y += 0.01 * ((float)rand() / RAND_MAX - 0.5);
+      cloud->points[i].z += 0.01 * ((float)rand() / RAND_MAX - 0.5);
+    }
+
     sensor_msgs::msg::PointCloud2 output;
     pcl::toROSMsg(*cloud.get(), output);
     output.header.frame_id = frame_id_;
