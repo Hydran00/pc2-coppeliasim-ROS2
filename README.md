@@ -8,11 +8,19 @@ This package reads the depth map data coming from 3D cameras in CoppeliaSim and 
 <img src="assets/demo.png" width="800">
 
 ### Installation
+Build the package in your ROS2 workspace
 ```
 cd <path to your src folder in the ROS2 workspace>
 git clone https://github.com/Hydran00/pc2-coppeliasim-ROS2.git
-colcon build --packages-select pc2_coppeliasim --symlink-install
+cd .. && colcon build --packages-select pc2_coppeliasim --symlink-install && source install/setup.bash
 ```
+### Running
+1. Open Coppeliasim and open the scene `stereo-camera.ttt` 
+2. Run the node
+```
+ros2 launch pc2_coppeliasim pc2_coppeliasim.launch.py
+```
+
 ### Camera parameters
 If you want to modify the camera parameters in CoppeliaSim you then have to properly update also the same parameters in `pc2_coppeliasim.launch.py` file.
 
