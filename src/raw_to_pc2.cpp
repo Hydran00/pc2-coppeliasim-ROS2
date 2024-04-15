@@ -90,21 +90,19 @@ private:
 
     for (int j = 0; j < height_; j++)
     {
-      float y = (j - height_ / 2.0);
+      y = (j - height_ / 2.0);
       for (int i = 0; i < width_; i++)
       {
-        int k = j * width_ + i;
-        float x = -(i - width_ / 2.0);
+        k = j * width_ + i;
+        x = -(i - width_ / 2.0);
         x_scale.push_back(float(x / f_));
         y_scale.push_back(float(y / f_));
 
-        float depth = near_clip_ + scale_ * depth_raw[k];
-        float xyz[3] = {depth * x_scale[k], depth * y_scale[k], depth};
-        pcl::PointXYZRGB p;
-
-        p.x = xyz[0];
-        p.y = xyz[1];
-        p.z = xyz[2];
+        depth = near_clip_ + scale_ * depth_raw[k];
+        
+        p.x = depth * x_scale[k];
+        p.y = depth * y_scale[k];
+        p.z = depth;
         p.r = 0;
         p.g = 0;
         p.b = 0;
@@ -112,6 +110,8 @@ private:
       }
     }
 
+    x_scale.clear();
+    y_scale.clear();
     // add Gaussian noise
     if (noise_ || color_)
     {
@@ -132,23 +132,28 @@ private:
       }
     }
 
-    sensor_msgs::msg::PointCloud2 output;
-    pcl::toROSMsg(*cloud.get(), output);
-    output.header.frame_id = frame_id_;
+    pcl::toROSMsg(*cloud.get(), output_);
+    output_.header.frame_id = frame_id_;
     // get simulation time
-    output.header.stamp = this->now();
-    pub_->publish(output);
+    output_.header.stamp = this->now();
+    pub_->publish(output_);
   }
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
   rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr sub_;
+    sensor_msgs::msg::PointCloud2 output_;
 
   std::string input_topic_, output_topic_, frame_id_;
   int height_, width_;
   float near_clip_, far_clip_, view_angle_, scale_, f_;
-  std::vector<float> x_scale, y_scale;
   bool noise_, color_;
   int R = 0, G = 0, B = 0;
+  // utils
+  float k, x, y, z, depth;
+  float xyz[3];
+  std::vector<float> x_scale, y_scale;
+  pcl::PointXYZRGB p;
+
 };
 
 int main(int argc, char **argv)
