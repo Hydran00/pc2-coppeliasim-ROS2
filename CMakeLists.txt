@@ -5,7 +5,12 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-set (CMAKE_PREFIX_PATH "/home/nardi/CoppeliaSim/programming/zmqRemoteApi/clients/cpp/build/cppzmq")
+# list(APPEND CMAKE_PREFIX_PATH "$ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/build/cppzmq/")
+# list(APPEND CMAKE_PREFIX_PATH "$ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/build/jsoncons/")
+
+
+# message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+# set(cppzmq_DIR "$ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/build/cppzmq/")
 
 # Find dependencies
 find_package(ament_cmake REQUIRED)
@@ -23,26 +28,18 @@ add_definitions(${PCL_DEFINITIONS})
 # Create an executable
 add_executable(raw_to_pc2 src/raw_to_pc2.cpp)
 
-# ZMQ CoppeliaSim dependencies
-# target_compile_definitions(raw_to_pc2 PUBLIC -DSIM_REMOTEAPICLIENT_OBJECTS)
-# Include directories for dependencies
 include_directories(
   ${PCL_INCLUDE_DIRS}
-  /home/nardi/CoppeliaSim/programming/zmqRemoteApi/clients/cpp/
-  /home/nardi/CoppeliaSim/programming/zmqRemoteApi/clients/cpp/build/jsoncons/include/
-  /home/nardi/CoppeliaSim/programming/zmqRemoteApi/clients/cpp/build/generated/
+  $ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/
+  $ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/build/jsoncons/include/
 )
-# link_directories(raw_to_pc2
-#   PUBLIC
-#   /home/nardi/CoppeliaSim/programming/zmqRemoteApi/clients/cpp/build/
-# )
+
 
 add_library(RemoteAPIClient STATIC IMPORTED) # or STATIC instead of SHARED
 set_target_properties(RemoteAPIClient PROPERTIES
-  IMPORTED_LOCATION "/home/nardi/CoppeliaSim/programming/zmqRemoteApi/clients/cpp/build/libRemoteAPIClient.a"
-  INTERFACE_INCLUDE_DIRECTORIES "/home/nardi/CoppeliaSim/programming/zmqRemoteApi/clients/cpp/" 
+  IMPORTED_LOCATION "$ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/build/libRemoteAPIClient.a"
+  INTERFACE_INCLUDE_DIRECTORIES "$ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/build/cppzmq/" 
 )
-
 # set cppzmq_DIR
 target_compile_definitions(raw_to_pc2 PUBLIC -DSIM_REMOTEAPICLIENT_OBJECTS)
 
