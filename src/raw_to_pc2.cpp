@@ -15,11 +15,17 @@
 #include <pcl/point_types.h>
 #include "pcl/filters/passthrough.h"
 
+// CoppeliaSim remote zmq API
+#include <RemoteAPIClient.h>
+
 // Other
 #include <iostream>
 
 #define M_PI 3.14159265358979323846
 #define degreesToRadians(angleDegrees) (angleDegrees * M_PI / 180.0)
+
+RemoteAPIClient client_;
+auto sim_ = client_.getObject().sim();
 
 class RawToPointCloud2 : public rclcpp::Node
 {
@@ -28,6 +34,7 @@ public:
       : Node("float32multiarray_to_pointcloud2")
   {
     // Get parameters
+    this->declare_parameter<std::string>("handle_name", "kinect/depth");
     this->declare_parameter<std::string>("input_topic", "cloud_raw");
     this->declare_parameter<std::string>("output_topic", "cloud_out");
     this->declare_parameter<std::string>("frame_id", "map");
@@ -42,6 +49,7 @@ public:
     this->declare_parameter<int>("G", 0);
     this->declare_parameter<int>("B", 0);
 
+    this->get_parameter("handle_name", handle_name_);
     this->get_parameter("input_topic", input_topic_);
     this->get_parameter("output_topic", output_topic_);
     this->get_parameter("frame_id", frame_id_);
@@ -64,29 +72,45 @@ public:
       assert(0 <= G && G <= 255 && "G value must be between 0 and 255");
       assert(0 <= B && B <= 255 && "B value must be between 0 and 255");
     }
+
+    RCLCPP_INFO(this->get_logger(), "Handle name: %s", handle_name_.c_str());
     RCLCPP_INFO(this->get_logger(), "Input topic: %s", input_topic_.c_str());
     RCLCPP_INFO(this->get_logger(), "Output topic: %s", output_topic_.c_str());
     RCLCPP_INFO(this->get_logger(), "Frame ID: %s", frame_id_.c_str());
     RCLCPP_INFO(this->get_logger(), "Resolution: %dx%d", width_, height_);
 
+    // init handle for the depth sensor readings
+    handle_ = sim_.getObject(handle_name_);
+
+
     // Set up publisher
     pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(output_topic_, 1);
 
-    // Set up subscriber
-    sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-        input_topic_, 1, std::bind(&RawToPointCloud2::chatterCallback, this, std::placeholders::_1));
+    timer_ = this->create_wall_timer(std::chrono::milliseconds(30), std::bind(&RawToPointCloud2::chatterCallback, this));
 
     scale_ = (far_clip_ - near_clip_) / 1.0;
     // unsigned int datalen = height_ * width_;
     float view_angle_r = degreesToRadians(view_angle_);
     f_ = float(float(std::max(height_, width_)) / 2) / float(tan(view_angle_r / 2));
+    cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
   }
 
 private:
-  void chatterCallback(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
+  void chatterCallback()
   {
-    std::vector<float> depth_raw = msg->data;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    depth_res = sim_.getVisionSensorDepth(handle_);
+
+    float f;
+    //output on file as integer composed by 4 bytes
+    for (size_t i = 0; i < std::get<0>(depth_res).size(); i+=4)
+    {
+      // use memcpy to convert 4 bytes to float
+      memcpy(&f, &std::get<0>(depth_res)[i], sizeof(f));
+      depth_raw.push_back(f);
+    }
+
+
+    // depth_raw = sim_.unpackFloatTable(std::get<0>(depth_res));
 
     for (int j = 0; j < height_; j++)
     {
@@ -99,7 +123,7 @@ private:
         y_scale.push_back(float(y / f_));
 
         depth = near_clip_ + scale_ * depth_raw[k];
-        
+
         p.x = depth * x_scale[k];
         p.y = depth * y_scale[k];
         p.z = depth;
@@ -109,7 +133,7 @@ private:
         cloud->points.push_back(p);
       }
     }
-
+    depth_raw.clear();
     x_scale.clear();
     y_scale.clear();
     // add Gaussian noise
@@ -137,23 +161,27 @@ private:
     // get simulation time
     output_.header.stamp = this->now();
     pub_->publish(output_);
+    cloud->clear();
   }
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
-  rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr sub_;
-    sensor_msgs::msg::PointCloud2 output_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  sensor_msgs::msg::PointCloud2 output_;
 
-  std::string input_topic_, output_topic_, frame_id_;
+  std::string handle_name_, input_topic_, output_topic_, frame_id_;
   int height_, width_;
   float near_clip_, far_clip_, view_angle_, scale_, f_;
   bool noise_, color_;
   int R = 0, G = 0, B = 0;
+  long int handle_;
   // utils
   float k, x, y, z, depth;
   float xyz[3];
   std::vector<float> x_scale, y_scale;
   pcl::PointXYZRGB p;
-
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
+  std::vector<double> depth_raw;
+  std::tuple<std::vector<uint8_t>, std::vector<int64_t>> depth_res;
 };
 
 int main(int argc, char **argv)

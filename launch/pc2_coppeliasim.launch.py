@@ -41,6 +41,7 @@ def launch_setup(context):
         name='raw2pc_1',
         output='screen',
         parameters=[
+            {'handle_name': "/ur3e_"+prefix1+"/kinect/depth"},
             {'frame_id': prefix1+"camera"},
             {'input_topic': '/cloud_raw_1'},
             {'output_topic': '/cloud_out_1'},
