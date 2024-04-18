@@ -8,12 +8,28 @@ This package reads the depth map data coming from 3D cameras in CoppeliaSim and 
 <img src="assets/demo.png" width="800">
 
 ### Installation
-Build the package in your ROS2 workspace
-```
-cd <path to your src folder in the ROS2 workspace>
-git clone https://github.com/Hydran00/pc2-coppeliasim-ROS2.git
-cd .. && colcon build --packages-select pc2_coppeliasim --symlink-install && source install/setup.bash
-```
+Install dependencies:
+- ZeroMQ
+  ```
+  apt-get install libzmq3-dev
+  ```
+- ZeroMQ CoppeliaSim API:
+  ```
+  export COPPELIASIM_ROOT_DIR=<path-to-CoppeliaSim-root-dir>
+  cd <path-to-CoppeliaSim-root-dir>/programming/zmqRemoteApi/clients/cpp
+  mkdir build && cd build
+  cmake ..
+  cmake --build . --config Release  
+  cd cppzmq
+  cmake .
+  make
+  ```
+- Build the package in your ROS2 workspace
+  ```
+  cd <path-to-your-src-folder-in-the-ROS2-workspace>
+  git clone https://github.com/Hydran00/pc2-coppeliasim-ROS2.git
+  cd .. && colcon build --packages-select pc2_coppeliasim --symlink-install && source install/setup.bash
+  ```
 ### Running
 1. Open Coppeliasim and open the scene `stereo-camera.ttt` 
 2. Run the node
