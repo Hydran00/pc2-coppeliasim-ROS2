@@ -100,8 +100,6 @@ class RawToPointCloud2 : public rclcpp::Node {
   void chatterCallback() {
     depth_res = sim_.getVisionSensorDepth(handle_);
     auto time = this->now();
-    // std::cout << "ROS TIME: " << now.seconds() << " " << now.nanoseconds() << std::endl;
-    // std::cout << "COPPELIA TIME: " << (int)time<<" "<< (time - (int)time) * 1e9 << std::endl;
 
     float f;
     // output on file as integer composed by 4 bytes
@@ -154,10 +152,7 @@ class RawToPointCloud2 : public rclcpp::Node {
     pcl::toROSMsg(*cloud.get(), output_);
     output_.header.frame_id = frame_id_;
     // get simulation time
-    // output_.header.stamp = rclcpp::Time((int)time, (time - (int)time) * 1e9);
     output_.header.stamp = time;
-    // RCLCPP_INFO(this->get_logger(), "Time: sec: %d, nanosec: %d",
-    //             output_.header.stamp.sec, output_.header.stamp.nanosec);
     pub_->publish(output_);
     cloud->clear();
   }
