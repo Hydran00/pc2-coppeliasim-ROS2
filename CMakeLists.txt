@@ -6,11 +6,12 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # list(APPEND CMAKE_PREFIX_PATH "$ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/build/cppzmq/")
-# list(APPEND CMAKE_PREFIX_PATH "$ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/build/jsoncons/")
 
 
-# message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
-# set(cppzmq_DIR "$ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/build/cppzmq/")
+# message("CMAKE_PREFIX_PATH:" ${CMAKE_PREFIX_PATH})
+set(cppzmq_DIR "$ENV{COPPELIASIM_ROOT_DIR}/programming/zmqRemoteApi/clients/cpp/build/cppzmq/")
+list(APPEND CMAKE_PREFIX_PATH cppzmq_DIR)
+
 
 # Find dependencies
 find_package(ament_cmake REQUIRED)
