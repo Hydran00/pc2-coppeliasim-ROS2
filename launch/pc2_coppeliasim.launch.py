@@ -21,7 +21,7 @@ launch_args = [
     DeclareLaunchArgument('height', default_value='360'),
     DeclareLaunchArgument('width', default_value='360'),
     DeclareLaunchArgument('open_rviz', default_value='true'),
-    DeclareLaunchArgument('noise', default_value='true'),
+    DeclareLaunchArgument('noise', default_value='false'),
     DeclareLaunchArgument('color', default_value='true')
 ]
 
@@ -70,7 +70,7 @@ def launch_setup(context):
         parameters=[{"use_sim_time": use_sim_time}]
     )
 
-    return [converter, rviz]
+    return [converter] #, rviz]
 
 def generate_launch_description():
     opfunc = OpaqueFunction(function = launch_setup)

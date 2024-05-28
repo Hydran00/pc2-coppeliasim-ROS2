@@ -9,10 +9,11 @@
 #include "sensor_msgs/msg/point_cloud2.hpp"
 
 // PCL
-#include "pcl/conversions.h"
-#include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+#include "pcl/conversions.h"
 #include "pcl/filters/passthrough.h"
 
 // CoppeliaSim remote zmq API
@@ -27,12 +28,9 @@
 RemoteAPIClient client_;
 auto sim_ = client_.getObject().sim();
 
-class RawToPointCloud2 : public rclcpp::Node
-{
-public:
-  RawToPointCloud2()
-      : Node("float32multiarray_to_pointcloud2")
-  {
+class RawToPointCloud2 : public rclcpp::Node {
+ public:
+  RawToPointCloud2() : Node("float32multiarray_to_pointcloud2") {
     // Get parameters
     this->declare_parameter<std::string>("handle_name", "kinect/depth");
     this->declare_parameter<std::string>("input_topic", "cloud_raw");
@@ -66,8 +64,7 @@ public:
     this->get_parameter("B", B);
 
     // assert 0 < color <255
-    if (color_)
-    {
+    if (color_) {
       assert(0 <= R && R <= 255 && "R value must be between 0 and 255");
       assert(0 <= G && G <= 255 && "G value must be between 0 and 255");
       assert(0 <= B && B <= 255 && "B value must be between 0 and 255");
@@ -82,41 +79,43 @@ public:
     // init handle for the depth sensor readings
     handle_ = sim_.getObject(handle_name_);
 
-
     // Set up publisher
-    pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(output_topic_, 1);
+    pub_ =
+        this->create_publisher<sensor_msgs::msg::PointCloud2>(output_topic_, 1);
 
-    timer_ = this->create_wall_timer(std::chrono::milliseconds(30), std::bind(&RawToPointCloud2::chatterCallback, this));
+    timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(30),
+        std::bind(&RawToPointCloud2::chatterCallback, this));
 
     scale_ = (far_clip_ - near_clip_) / 1.0;
     // unsigned int datalen = height_ * width_;
     float view_angle_r = degreesToRadians(view_angle_);
-    f_ = float(float(std::max(height_, width_)) / 2) / float(tan(view_angle_r / 2));
-    cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+    f_ = float(float(std::max(height_, width_)) / 2) /
+         float(tan(view_angle_r / 2));
+    cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(
+        new pcl::PointCloud<pcl::PointXYZRGB>);
   }
 
-private:
-  void chatterCallback()
-  {
+ private:
+  void chatterCallback() {
     depth_res = sim_.getVisionSensorDepth(handle_);
+    auto time = this->now();
+    // std::cout << "ROS TIME: " << now.seconds() << " " << now.nanoseconds() << std::endl;
+    // std::cout << "COPPELIA TIME: " << (int)time<<" "<< (time - (int)time) * 1e9 << std::endl;
 
     float f;
-    //output on file as integer composed by 4 bytes
-    for (size_t i = 0; i < std::get<0>(depth_res).size(); i+=4)
-    {
+    // output on file as integer composed by 4 bytes
+    for (size_t i = 0; i < std::get<0>(depth_res).size(); i += 4) {
       // use memcpy to convert 4 bytes to float
       memcpy(&f, &std::get<0>(depth_res)[i], sizeof(f));
       depth_raw.push_back(f);
     }
 
-
     // depth_raw = sim_.unpackFloatTable(std::get<0>(depth_res));
 
-    for (int j = 0; j < height_; j++)
-    {
+    for (int j = 0; j < height_; j++) {
       y = (j - height_ / 2.0);
-      for (int i = 0; i < width_; i++)
-      {
+      for (int i = 0; i < width_; i++) {
         k = j * width_ + i;
         x = -(i - width_ / 2.0);
         x_scale.push_back(float(x / f_));
@@ -137,21 +136,17 @@ private:
     x_scale.clear();
     y_scale.clear();
     // add Gaussian noise
-    if (noise_ || color_)
-    {
-      for (size_t i = 0; i < cloud->points.size(); i++)
-      {
-        if (color_)
-        {
+    if (noise_ || color_) {
+      for (size_t i = 0; i < cloud->points.size(); i++) {
+        if (color_) {
           cloud->points[i].r = R;
           cloud->points[i].g = G;
           cloud->points[i].b = B;
         }
-        if (noise_)
-        {
-          cloud->points[i].x += 0.015 * ((float)rand() / RAND_MAX - 0.5);
-          cloud->points[i].y += 0.015 * ((float)rand() / RAND_MAX - 0.5);
-          cloud->points[i].z += 0.015 * ((float)rand() / RAND_MAX - 0.5);
+        if (noise_) {
+          cloud->points[i].x += 0.007 * ((float)rand() / RAND_MAX - 0.5);
+          cloud->points[i].y += 0.007 * ((float)rand() / RAND_MAX - 0.5);
+          cloud->points[i].z += 0.007 * ((float)rand() / RAND_MAX - 0.5);
         }
       }
     }
@@ -159,7 +154,10 @@ private:
     pcl::toROSMsg(*cloud.get(), output_);
     output_.header.frame_id = frame_id_;
     // get simulation time
-    output_.header.stamp = this->now();
+    // output_.header.stamp = rclcpp::Time((int)time, (time - (int)time) * 1e9);
+    output_.header.stamp = time;
+    // RCLCPP_INFO(this->get_logger(), "Time: sec: %d, nanosec: %d",
+    //             output_.header.stamp.sec, output_.header.stamp.nanosec);
     pub_->publish(output_);
     cloud->clear();
   }
@@ -184,8 +182,7 @@ private:
   std::tuple<std::vector<uint8_t>, std::vector<int64_t>> depth_res;
 };
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<RawToPointCloud2>();
   rclcpp::spin(node);
