@@ -98,8 +98,8 @@ class RawToPointCloud2 : public rclcpp::Node {
 
  private:
   void chatterCallback() {
-    depth_res = sim_.getVisionSensorDepth(handle_);
     auto time = this->now();
+    depth_res = sim_.getVisionSensorDepth(handle_);
 
     float f;
     // output on file as integer composed by 4 bytes
